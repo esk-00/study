@@ -97,3 +97,10 @@ for epoch in range(epochs):
 loss_avg = loss_sum / cnt
 losses.append(loss_avg)
 print(loss_avg)
+
+# plot losses
+epochs = list(range(1, epochs + 1))
+plt.plot(epochs, losses, marker='o', linestyle='-')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.show()
