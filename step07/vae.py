@@ -94,13 +94,26 @@ for epoch in range(epochs):
         loss_sum += loss.item()
         cnt += 1
 
-loss_avg = loss_sum / cnt
-losses.append(loss_avg)
-print(loss_avg)
+    loss_avg = loss_sum / cnt
+    print(loss_avg)
+    losses.append(loss_avg)
 
 # plot losses
 epochs = list(range(1, epochs + 1))
 plt.plot(epochs, losses, marker='o', linestyle='-')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
+plt.show()
+
+
+# generate new images
+with torch.no_grad():
+    sample_size = 64
+    z = torch.randn(sample_size, latent_dim)
+    x = model.decoder(z)
+    generated_images = x.view(sample_size, 1, 28, 28)
+
+grid_img = torchvision.utils.make_grid(generated_images, nrow=8, padding=2, normalize=True)
+plt.imshow(grid_img.permute(1, 2, 0))
+plt.axis('off')
 plt.show()
