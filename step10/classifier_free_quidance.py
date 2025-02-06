@@ -1,5 +1,4 @@
 import math
-import numpy as np
 import torch
 import torchvision
 import matplotlib.pyplot as plt
@@ -53,6 +52,7 @@ def pos_encoding(timesteps, output_dim, device='cpu'):
         v[i] = _pos_encoding(timesteps[i], output_dim, device)
     return v
 
+
 class ConvBlock(nn.Module):
     def __init__(self, in_ch, out_ch, time_embed_dim):
         super().__init__()
@@ -95,11 +95,11 @@ class UNetCond(nn.Module):
         if num_labels is not None:
             self.label_emb = nn.Embedding(num_labels, time_embed_dim)
 
-    def forward(self, x, timesteps, labels=None):
+    def forward(self, x, timesteps, lables=None):
         t = pos_encoding(timesteps, self.time_embed_dim)
 
-        if labels is not None:
-            t += self.label_emb(labels)
+        if lables is not None:
+            t += self.label_emb(lables)
 
         x1 = self.down1(x, t)
         x = self.maxpool(x1)
@@ -116,7 +116,6 @@ class UNetCond(nn.Module):
         x = self.up1(x, t)
         x = self.out(x)
         return x
-
 
 class Diffuser:
     def __init__(self, num_timesteps=1000, beta_start=0.0001, beta_end=0.02, device='cpu'):
@@ -138,7 +137,7 @@ class Diffuser:
         x_t = torch.sqrt(alpha_bar) * x_0 + torch.sqrt(1 - alpha_bar) * noise
         return x_t, noise
 
-    def denoise(self, model, x, t, labels, gamma):
+    def denoise(self, model, x, t, labels):
         T = self.num_timesteps
         assert (t >= 1).all() and (t <= T).all()
 
@@ -154,9 +153,7 @@ class Diffuser:
 
         model.eval()
         with torch.no_grad():
-            eps = model(x, t, labels)
-            eps_uncond = model(x, t)
-            eps = eps_uncond + gamma * (eps - eps_uncond)
+            eps = model(x, t, labels)  # add lable embedding
         model.train()
 
         noise = torch.randn_like(x, device=self.device)
@@ -174,7 +171,7 @@ class Diffuser:
         to_pil = transforms.ToPILImage()
         return to_pil(x)
 
-    def sample(self, model, x_shape=(20, 1, 28, 28), labels=None, gamma=3.0):
+    def sample(self, model, x_shape=(20, 1, 28, 28), labels=None):
         batch_size = x_shape[0]
         x = torch.randn(x_shape, device=self.device)
         if labels is None:
@@ -182,7 +179,7 @@ class Diffuser:
 
         for i in tqdm(range(self.num_timesteps, 0, -1)):
             t = torch.tensor([i] * batch_size, device=self.device, dtype=torch.long)
-            x = self.denoise(model, x, t, labels, gamma)
+            x = self.denoise(model, x, t, labels)
 
         images = [self.reverse_to_img(x[i]) for i in range(batch_size)]
         return images, labels
@@ -202,19 +199,11 @@ for epoch in range(epochs):
     loss_sum = 0.0
     cnt = 0
 
-    # generate samples every epoch ===================
-    #images, labels = diffuser.sample(model)
-    #show_images(images, labels)
-    # ================================================
-
     for images, labels in tqdm(dataloader):
         optimizer.zero_grad()
         x = images.to(device)
         labels = labels.to(device)
         t = torch.randint(1, num_timesteps+1, (len(x),), device=device)
-
-        if np.random.random() < 0.1:
-            labels = None
 
         x_noisy, noise = diffuser.add_noise(x, t)
         noise_pred = model(x_noisy, t, labels)
