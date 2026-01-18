@@ -2,5 +2,5 @@
 .\venv\Scripts\activate
 source venv/bin/activate
 
-#jupyter lab起動
+#jupyter lab起動コマンド
 jupyter lab
