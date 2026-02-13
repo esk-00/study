@@ -1,4 +1,4 @@
-#仮想環境activate
+#仮想環境activate(mac & windows)
 .\venv\Scripts\activate
 source venv/bin/activate
 
