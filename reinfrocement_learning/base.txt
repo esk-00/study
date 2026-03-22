@@ -1,0 +1,3 @@
+#仮想環境activate
+.\.venv\Scripts\activate
+source .venv/bin/activate
